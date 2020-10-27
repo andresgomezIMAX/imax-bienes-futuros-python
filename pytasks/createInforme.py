@@ -109,15 +109,15 @@ if __name__ == '__main__':
     dataBaseName = 'proyecto1'#input('Nombre de base de datos: ')
     tableName = 'matriz' # Table with project matrix data
 
-    formatFile = 'pytasks\Formatos\PMF-Tasacion.xlsx'
-    mainDataFilePath = 'pytasks\Formatos\DATA.xlsx'
-    formatReportfile = 'pytasks\Formatos\Informe.xlsx'
+    formatFile = 'Formatos\PMF-Tasacion.xlsx'
+    mainDataFilePath = 'Formatos\DATA.xlsx'
+    formatReportfile = 'Formatos\Informe.xlsx'
 
     key = {0:1, 1:183, 2:224} # User input selecction of real estate units
 
     # User input:
     codigoTasa = '256' 
-    cliente = 'Pepito Mendienta - DNI: 45768939'
+    cliente = 'Pepito Mendienta - DNI 45768939'
     fechaInspecc = '20/10/2020'
     tcTasa = float('3.6')
 

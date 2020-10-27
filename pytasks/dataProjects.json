@@ -1,0 +1,76 @@
+{
+    "DataProjects": [
+        {
+            "idProyecto": 1,
+            "nombreProyecto": "Villa Marina",
+            "direccion": "Santa Anita",
+            "promotor": "XXXX",
+            "banco": "BCP"
+        },
+        {
+            "idProyecto": 2,
+            "nombreProyecto": "Villa Marina 2",
+            "direccion": "Santa Anita 2",
+            "promotor": "XXXXX",
+            "banco": "BBVA"
+        },
+        {
+            "idProyecto": 3,
+            "nombreProyecto": "Primavera",
+            "direccion": "San Miguel",
+            "promotor": "XXXXX",
+            "banco": "BBVA"
+        },
+        {
+            "idProyecto": 4,
+            "nombreProyecto": "Primavera",
+            "direccion": "Miraflores",
+            "promotor": "XXXXX",
+            "banco": "BCP"
+        },
+        {
+            "idProyecto": 9,
+            "nombreProyecto": "Villa Marina",
+            "direccion": "Santa Anita ",
+            "promotor": "XXXXXXX",
+            "banco": "BCP"
+        },
+        {
+            "idProyecto": 12,
+            "nombreProyecto": "12345",
+            "direccion": "23e4rt",
+            "promotor": "sxdcfvg",
+            "banco": "bcp"
+        },
+        {
+            "idProyecto": 24,
+            "nombreProyecto": "Las Palmeras",
+            "direccion": "Santiago de Surco",
+            "promotor": "xxxxxxxxxxxxx",
+            "banco": "bbva"
+        },
+        {
+            "idProyecto": 55,
+            "nombreProyecto": "Las Palmeras",
+            "direccion": "hola",
+            "promotor": "sdfb",
+            "banco": "bcp"
+        },
+        {
+            "idProyecto": 755,
+            "nombreProyecto": "Las Palmeras",
+            "direccion": "wertyu",
+            "promotor": "wertyu",
+            "banco": "bcp"
+        },
+        {
+            "idProyecto": 2345,
+            "nombreProyecto": "3456yu",
+            "direccion": "",
+            "promotor": "",
+            "banco": "bcp"
+        }
+    ],
+    "Message": "",
+    "StatusCode": 200
+}

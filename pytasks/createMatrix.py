@@ -16,7 +16,9 @@ def createMatrix(hostsql, usersql, passwordsql, dataBaseName, tableName, mainDat
     aTechada = DataInMatrix.iloc[:]['Área techada (m²)']
     moneda = DataInMatrix.iloc[:]['Moneda']
     vVenta = DataInMatrix.iloc[:]['Valor de Venta']
-    vista = DataInMatrix.iloc[:]['VISTA']
+    tipo = DataInMatrix.iloc[:]['TIPO']
+    totalesData = DataInMatrix.sum(axis=0, skipna=True) #Sum all data in columns
+    aOcupadaSum = totalesData['Área ocupada (m²)']
 
     #Gets from main excel and project sheet data
     DataInGeneral = pd.read_excel(mainDataFilePath, sheet_name='DATA')
@@ -24,15 +26,22 @@ def createMatrix(hostsql, usersql, passwordsql, dataBaseName, tableName, mainDat
     vut = float(DataInGeneral.iloc[:1]['VUT (USD)']) #Unit terrain value
     vrc = float(DataInGeneral.iloc[:1]['VRC (USD)']) #Unit reconstruction value
     tc = float(DataInGeneral.iloc[:1]['TC']) #Exchange rate
+    factorRealiza = float(DataInGeneral.iloc[:1]['F.Realiza (%)']) #Realization value factor for calculus
+    factorAsegura = float(DataInGeneral.iloc[:1]['F.Asegura (%)']) #Insurable value factor for calculus
+    aComunTotal = float(DataInGeneral.iloc[:1]['A. Común (m²)']) #Projects Total Comun area
+    factorTasacion = DataInGeneral.iloc[:3][['Tipo Unidad', '% Tasación']]
+    
+    aOcupadaTotal = aOcupadaSum + aComunTotal #Total area including comun area
 
-    #Gets from report format file the name of the financial compañy / main client
+    #Gets from report format file the name of the financial compañy / main client and land area
     wbProyecto = openpyxl.load_workbook(formatFile, read_only=True)
     sheetProyecto = wbProyecto['Memoria']
     eFinan = sheetProyecto['D7'].value
+    aTerrenoPredio = float(sheetProyecto['P94'].value)
     wbProyecto.close
 
-    vue2 = DataInGeneral[['VUE (USD)', 'Tipo', 'Descripción']]
-    vue = vue2.rename(index = DataInGeneral.iloc[:]['Clase']) #Gets type of real estate unit data
+    claseUI = DataInGeneral[['Tipo', 'Descripción']]
+    claseUI = claseUI.rename(index = DataInGeneral.iloc[:]['Clase']) #Gets type of real estate unit data
 
     connection, cursor = connectToHost(hostsql, usersql, passwordsql) # Init connection
 
@@ -55,72 +64,53 @@ def createMatrix(hostsql, usersql, passwordsql, dataBaseName, tableName, mainDat
     #Runs true al the data and uploads it to the database MySql
     for x in range(0, len(DataInMatrix), 1):
 
-        #Init internal calculus:
-        aTerreno = round(float(aOcupada[x]) / 20 * 1.4, 2) #Implementar ingreso de factores 20 y 1.4
-        aComunes = round(float(aTechada[x]) * 0.15, 2) #Implementar ingreso de factores 0.15
+        #Real estate land area calculus:
+        incidenciaComun = aComunTotal / aOcupadaTotal
+        aTerrenoComun = incidenciaComun * aTerrenoPredio
+        incidencia1 = aOcupada[x] / aOcupadaTotal
+        aTerreno1 = incidencia1 * aTerrenoPredio
+        incidencia2 = aOcupada[x] / aOcupadaSum
+        aTerreno2 = incidencia2 * aTerrenoComun
+        aTerreno = round(aTerreno1 + aTerreno2, 2)
+
+        #Real estate Comun area calculus:
+        incidencia3 = aTerreno / aTerrenoPredio
+        aComunes = round(incidencia3 * aComunTotal, 2)
+        
+        #Land value for each real estate unit:
         vTerrenoUsd = round(aTerreno * vut / 100, 0) * 100
-        if unidad[x] == 'Departamento':
-            vComercialUsd = round( 
-                                    float(vue.loc[vista[x]]['VUE (USD)']) * (float(aTechada[x]) +
-                                    ((float(aOcupada[x]) - float(aTechada[x])) * 0.3)) / 100, 0
-                                ) * 100
+
+        #Comercial value for each real estate unit:
+        for y in factorTasacion.index:
+            if factorTasacion.loc[:y]['Tipo Unidad'][0] == unidad[x]:
+                factorT = factorTasacion.loc[:y]['% Tasación'][0]
+        
+        if moneda[x] == 'Soles':
+            vComercialUsd = round((float(vVenta[x]) / tc * (1 + factorT)) / 100, 0) * 100
         else:
-            vComercialUsd = vue.loc[vista[x]]['VUE (USD)']
+            vComercialUsd = round((float(vVenta[x]) * (1 + factorT)) / 100, 0) * 100
 
+        #Unitary comercial value /m2 for each Real Estate Unit:
+        vue = vComercialUsd / aTechada[x]
+
+        #Edification value for each real estate unit:
         vEdificaUsd = vComercialUsd - vTerrenoUsd
-        vRealizaUsd = round(vComercialUsd * 0.8 / 100, 0) *100
+        
+        #Excecution value for each real estate unit:
+        vRealizaUsd = round(vComercialUsd * factorRealiza / 100, 0) *100
 
+        #Insurable value for each real estate unit:
         if eFinan == 'BANCO INTERNACIONAL DEL PERÚ S.A.A. - INTERBANK':
             iAseguraUsd = vComercialUsd
         else:
-            iAseguraUsd = round(
-                                float(aTechada[x]) * vrc * 1.15 / 100,
-                                0
-                            ) * 100
-        #Finish internal calculus
-
-        #Init Check calculus:
-        # if moneda[x] == 'Soles':
-        #     vVentaUSD = float(vVenta[x]) / tc
-        # else:
-        #     vVentaUSD = float(vVenta[x])
-        
-        # errorCheck = False
-
-        # if vComercialUsd < vVentaUSD:
-        #     print(f"""Para el {unidad[x]} {num[x]} el valor comercial (USD {vComercialUsd} - ratio usado {vue.loc[vista[x]]['VUE (USD)']}) 
-        #             es menor que el valor de venta (USD {round(vVentaUSD, 2)} - ratio precio USD {round(vVentaUSD/float(aTechada[x]),2)}). 
-        #             Revisar datos de excel inicial y volver a subir""")
-        #     errorCheck = True
-
-        # revisionPorcentual = round(vComercialUsd / vVentaUSD - 1,2)
-
-        # if revisionPorcentual > 0.10:
-        #     print(f"""Para el {unidad[x]} {num[x]} el valor comercial (USD {vComercialUsd} - ratio usado {vue.loc[vista[x]]['VUE (USD)']}) 
-        #             es mayor que el valor de venta (USD {round(vVentaUSD, 2)} - ratio precio USD {round(vVentaUSD/float(aTechada[x]),2)}) en un {revisionPorcentual*100}%, 
-        #             siendo que máximo deberia ser un 5%. 
-        #             Revisar datos de excel inicial y volver a subir""")
-        #     errorCheck = True
-
-        # if errorCheck == True:
-        #     menssage = f'\nSe reinicia base de datos...'
-        #     command = f'DROP DATABASE {dataBaseName}'
-        #     query = (command, data, menssage)
-        #     executeQuery(connection, cursor, dataBaseName, query) #Runs Query
-        #     closeConectionToHost(connection, cursor) # Close connection
-
-        #     createDataBase(hostsql, usersql, passwordsql, dataBaseName, tableName)
-            
-        #     break
-        #     exit()
-        #Finish Check calculus
+            iAseguraUsd = round(float(aTechada[x]) * vrc * (1 + factorAsegura) / 100, 0) * 100
         
         data = (
                 unidad[x], str(num[x]), str(nivel[x]), None, None, float(aTerreno),
                 float(aOcupada[x]), float(aTechada[x]), float(aComunes), moneda[x], 
                 float(vVenta[x]), float(vTerrenoUsd), float(vEdificaUsd), float(vComercialUsd),
                 float(vRealizaUsd), float(iAseguraUsd), float(tc), None, 
-                vista[x], float(vue.loc[vista[x]]['VUE (USD)']), vue.loc[vista[x]]['Tipo'], vue.loc[vista[x]]['Descripción']
+                tipo[x], float(vue), claseUI.loc[tipo[x]]['Tipo'], claseUI.loc[tipo[x]]['Descripción']
                 )
 
         menssage = f'Tabla de matriz actualizada con {unidad[x]} {num[x]},  satisfactoriamente!'
@@ -137,8 +127,8 @@ if __name__ == '__main__':
     usersql = 'root'
     passwordsql = 'acidbass'
 
-    mainDataFilePath = 'pytasks\Formatos\DATA.xlsx' # Excel with matrix data
-    formatFile = 'pytasks\Formatos\PMF-Tasación.xlsx' # Excel with project data
+    mainDataFilePath = 'Formatos\DATA.xlsx' # Excel with matrix data
+    formatFile = 'Formatos\PMF-Tasacion.xlsx' # Excel with project data
 
     dataBaseName = 'proyecto1'#input('Nombre de base de datos: ')
     tableName = 'matriz' #table with project matrix data

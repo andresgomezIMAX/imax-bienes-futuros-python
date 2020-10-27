@@ -104,8 +104,8 @@ if __name__ == '__main__':
     usersql = 'root'
     passwordsql = 'acidbass'
 
-    formatMatrixFile = 'pytasks\Formatos\MATRIZ TASACIONES.xlsx' # Excel with Matrix Form
-    formatFile = 'pytasks\Formatos\PMF-Tasacion.xlsx' # Excel with project data
+    formatMatrixFile = 'Formatos\MATRIZ TASACIONES.xlsx' # Excel with Matrix Form
+    formatFile = 'Formatos\PMF-Tasacion.xlsx' # Excel with project data
 
     dataBaseName = 'proyecto1'#input('Nombre de base de datos: ')
     tableName = 'matriz' # Table with project matrix data
