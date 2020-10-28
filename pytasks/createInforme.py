@@ -1,4 +1,5 @@
 from MySqlConector import connectToHost, closeConectionToHost, executeQuery
+from letrasanumeros import numaLetras
 import pandas as pd
 import openpyxl
 from datetime import date
@@ -32,6 +33,7 @@ def createExcelInforme(hostsql, usersql, passwordsql, dataBaseName, tableName, k
     aOcupada = tasacionNew['ocupada']
     descrip = tasacionNew['descripción']
     vComercialUsd = tasacionNew['comercialusd']
+    vRealizaUsd = tasacionNew['realizausd']
 
     # Get bank name and comparse to get letters:
     wbProyecto = openpyxl.load_workbook(formatFile, read_only=True)
@@ -77,6 +79,8 @@ def createExcelInforme(hostsql, usersql, passwordsql, dataBaseName, tableName, k
     
     # Fills real estate units data in report:
     y = 0
+    vComercialUsdTotal = 0
+    vRealizaUsdTotal = 0
     for x in range(0, len(key), 1):
         sheetInforme.cell(row=x + 138, column=4).value = f"{unidad[key[x]]} No {num[key[x]]}"
         sheetInforme.cell(row=x + 138, column=16).value = aTerreno[key[x]]
@@ -87,6 +91,9 @@ def createExcelInforme(hostsql, usersql, passwordsql, dataBaseName, tableName, k
         sheetInforme.cell(row=x + 287, column=14).value = vut
         sheetInforme.cell(row=x + 324, column=17).value = vrc
         sheetInforme.cell(row=x + 340, column=19).value = vComercialUsd[key[x]]
+        sheetInforme.cell(row=x + 366, column=15).value = round(vRealizaUsd[key[x]] / vComercialUsd[key[x]], 1)
+        vComercialUsdTotal = vComercialUsdTotal + vComercialUsd[key[x]]
+        vRealizaUsdTotal = vRealizaUsdTotal + vRealizaUsd[key[x]]
         y = y + 1
 
     # Hides excess rows for printing:
@@ -95,9 +102,15 @@ def createExcelInforme(hostsql, usersql, passwordsql, dataBaseName, tableName, k
         for n in range(0, 11-y, 1):
             sheetInforme.row_dimensions[x-n].hidden = True
 
+    letras = numaLetras(vComercialUsdTotal)
+    letras1 = numaLetras(vRealizaUsdTotal)
+    sheetInforme['F353'].value = f'{letras} DÓLARES AMERICANOS'
+    sheetInforme['F379'].value = f'{letras1} DÓLARES AMERICANOS'
+
     #Saves and closes the new report:
     wbInforme.save(f'{str(date.today().strftime("%Y-%m-%d"))}_{projectName}_{cliente}.xlsx')
     wbInforme.close
+
 
 if __name__ == '__main__':
 
