@@ -1,12 +1,3 @@
 openpyxl
-xlsxwriter
 pandas
 mysql
-
-flask
-flask-bootstrap
-flask-wtf
-flask-testing
-blinker
-firebase-admin
-flask-login
