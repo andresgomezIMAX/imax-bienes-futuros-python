@@ -1,42 +1,68 @@
 from letrasanumeros import numaLetras
+from createMatrixJson import calculoTasa
+from jsonConverter import recibeJson, sentJson
 import pandas as pd
 import openpyxl
 from datetime import date
 
-def createExcelInforme(key, codigoTasa, cliente, clienteFile, fechaInspecc, tcTasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix):
-    
+def createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral):
+
+    fecha = str(date.today().strftime("%Y-%m-%d"))
+
+    # 'fila', 'valor', 'aOcupada', 'aTechada', 'factorCalculo'
+    dataUITasa = recibeJson(pathdatauitasa)
+    key = dataUITasa['fila']
+    dataUITasa = dataUITasa.rename(index = dataUITasa.iloc[:]['fila'])
+    aTechada = dataUITasa['aTechada']
+    aOcupada = dataUITasa['aOcupada']
+    factorTasacion = dataUITasa['factorCalculo']
+    moneda = dataUITasa['moneda']
+    vVenta = dataUITasa['valor']
+
+    # 'código', 'nombre', 'dni', 'conyugue', 'dniC', 'fechaInspec', 'perito', 'tipoCambio'
+    dataGeneralTasa = recibeJson(pathdatageneral)
+    codigoTasa = dataGeneralTasa['código'][0]
+    clienteFile = f"{dataGeneralTasa['nombre'][0]} - DNI {dataGeneralTasa['dni'][0]}"
+    cliente = f"{dataGeneralTasa['nombre'][0]} - DNI: {dataGeneralTasa['dni'][0]} / {dataGeneralTasa['conyugue'][0]} - DNI: {dataGeneralTasa['dniC'][0]}"
+    fechaInspecc = dataGeneralTasa['fechaInspec'][0]
+    tcTasa = dataGeneralTasa['tipoCambio'][0]
+    perito = dataGeneralTasa['perito'][0]
+    dni = f"{dataGeneralTasa['dni'][0]} / {dataGeneralTasa['dniC'][0]}"
+    nombre = f"{dataGeneralTasa['nombre'][0]} / {dataGeneralTasa['conyugue'][0]}"
+
     # Converts Json to DataFrame
-    DataOutMatrix = pd.read_json(pathmatrix)
+    DataOutMatrix = recibeJson(pathmatrix)
     DataOutMatrix = DataOutMatrix.fillna('')
+    totalesData = DataOutMatrix.sum(axis=0, skipna=True) #Sum all data in columns
+    aOcupadaSum = totalesData['ocupada']
 
     # Creates dataframe with the data from selected real estate units:
     tasacionNew = pd.DataFrame(columns= DataOutMatrix.columns)
     for x in key:
-        tasacionNew = tasacionNew.append(DataOutMatrix.loc[key[x]])
-    
+        tasacionNew = tasacionNew.append(DataOutMatrix.loc[x])
+
     # Organize data so it can be analyze and upload to the report excel form
     unidad = tasacionNew.iloc[:]['unidad']
     num = tasacionNew.iloc[:]['num']
     nivel = tasacionNew.iloc[:]['nivel']
-    aTerreno = tasacionNew['terreno']
-    aTechada = tasacionNew['techada']
-    aOcupada = tasacionNew['ocupada']
-    descrip = tasacionNew['descripción']
-    vComercialUsd = tasacionNew['comercialusd']
-    vRealizaUsd = tasacionNew['realizausd']
-
+    clase = tasacionNew.iloc[:]['clase']
+    claseUI = tasacionNew[['tipo', 'descripción']]
+    claseUI = claseUI.rename(index = tasacionNew.iloc[:]['clase']) #Gets type of real estate unit data
+    
     # Get bank name and comparse to get letters:
     wbProyecto = openpyxl.load_workbook(formatFile, read_only=True)
     sheetInforme = wbProyecto['Memoria']
-    banco = sheetInforme['D7'].value
+    eFinan = sheetInforme['D7'].value
     sheetPortada = wbProyecto['Portada']
     projectName = sheetPortada['B33'].value
+    aTerrenoPredio = float(sheetInforme['P94'].value)
     wbProyecto.close
-    if banco == 'BANCO INTERNACIONAL DEL PERÚ S.A.A. - INTERBANK':
+    
+    if eFinan == 'BANCO INTERNACIONAL DEL PERÚ S.A.A. - INTERBANK':
         banco = 'IBK'
-    elif banco == 'BANCO PINCHINCHA':
+    elif eFinan == 'BANCO PINCHINCHA':
         banco = 'BP'
-    elif banco == 'SCOTIABANK PERÚ S.A.A.':
+    elif eFinan == 'SCOTIABANK PERÚ S.A.A.':
         banco = 'SCB'
 
     codigoTasa = f'Informe de Valuación N° {codigoTasa}-{banco}-{str(date.today().strftime("%Y"))}' # Cretaes report number code
@@ -54,6 +80,10 @@ def createExcelInforme(key, codigoTasa, cliente, clienteFile, fechaInspecc, tcTa
     DataInGeneral = pd.read_excel(mainDataFilePath, sheet_name='DATA')
     vut = float(DataInGeneral.iloc[:1]['VUT (USD)']) #Unit terrain value
     vrc = float(DataInGeneral.iloc[:1]['VRC (USD)']) #Unit reconstruction value
+    factorRealiza = float(DataInGeneral.iloc[:1]['F.Realiza (%)']) #Realization value factor for calculus
+    factorAsegura = float(DataInGeneral.iloc[:1]['F.Asegura (%)']) #Insurable value factor for calculus
+    aComunTotal = float(DataInGeneral.iloc[:1]['A. Común (m²)']) #Projects Total Comun area
+    aOcupadaTotal = aOcupadaSum + aComunTotal #Total area including comun area
 
     # Opens main report file:
     wbInforme = openpyxl.load_workbook(formatReportfile, read_only=False)
@@ -66,25 +96,46 @@ def createExcelInforme(key, codigoTasa, cliente, clienteFile, fechaInspecc, tcTa
     sheetInforme['E67'].value = tcTasa
     sheetInforme['J74'].value = tipo
 
-    
+    #Creates tasaciones Table:
+    columnas = [
+                'unidad', 'num', 'nivel', 'dni', 'nombre',
+                'terreno', 'ocupada', 'techada', 'comunes', 'moneda', 'valor', 
+                'terrenousd', 'edifusd', 'comercialusd', 'realizausd',
+                'asegurausd', 'tipocambio', 'fecha', 'clase', 'vueusd', 'tipo', 'descripción'
+                ]
+
+    tasacionSegui = pd.DataFrame(columns= columnas)
+
+
     # Fills real estate units data in report:
     y = 0
     vComercialUsdTotal = 0
     vRealizaUsdTotal = 0
-    for x in range(0, len(key), 1):
-        sheetInforme.cell(row=x + 138, column=4).value = f"{unidad[key[x]]} No {num[key[x]]}"
-        sheetInforme.cell(row=x + 138, column=16).value = aTerreno[key[x]]
-        sheetInforme.cell(row=x + 154, column=11).value = aTechada[key[x]]
-        sheetInforme.cell(row=x + 154, column=16).value = aOcupada[key[x]]
-        sheetInforme.cell(row=x + 189, column=4).value = f"Es materia de tasación el {unidad[key[x]]} No {num[key[x]]}, ubicado en el nivel {nivel[key[x]]}"
-        sheetInforme.cell(row=x + 200, column=13).value = descrip[key[x]]
-        sheetInforme.cell(row=x + 287, column=14).value = vut
-        sheetInforme.cell(row=x + 324, column=17).value = vrc
-        sheetInforme.cell(row=x + 340, column=19).value = vComercialUsd[key[x]]
-        sheetInforme.cell(row=x + 366, column=15).value = round(vRealizaUsd[key[x]] / vComercialUsd[key[x]], 1)
-        vComercialUsdTotal = vComercialUsdTotal + vComercialUsd[key[x]]
-        vRealizaUsdTotal = vRealizaUsdTotal + vRealizaUsd[key[x]]
+    for x in dataUITasa.index:
+
+        factorT = factorTasacion[x]
+        
+        data = calculoTasa(aComunTotal, aOcupadaTotal, aTerrenoPredio, aOcupada[x], aOcupadaSum, vut, factorT, unidad[x], moneda[x], vVenta[x], aTechada[x], factorRealiza, eFinan, vrc, factorAsegura, tcTasa, claseUI, num[x], nivel[x], clase[x], dni, nombre, fecha)
+
+        sheetInforme.cell(row=y + 138, column=4).value = f"{unidad[x]} No {num[x]}"
+        sheetInforme.cell(row=y + 138, column=16).value = data['terreno']
+        sheetInforme.cell(row=y + 154, column=11).value = aTechada[x]
+        sheetInforme.cell(row=y + 154, column=16).value = aOcupada[x]
+        sheetInforme.cell(row=y + 189, column=4).value = f"Es materia de tasación el {unidad[x]} No {num[x]}, ubicado en el nivel {nivel[x]}"
+        sheetInforme.cell(row=y + 200, column=13).value = data['descripción']
+        sheetInforme.cell(row=y + 287, column=14).value = vut
+        sheetInforme.cell(row=y + 324, column=17).value = vrc
+        sheetInforme.cell(row=y + 340, column=19).value = data['comercialusd']
+        sheetInforme.cell(row=y + 366, column=15).value = round(data['realizausd'] / data['comercialusd'], 1)
+        vComercialUsdTotal = vComercialUsdTotal + data['comercialusd']
+        vRealizaUsdTotal = vRealizaUsdTotal + data['realizausd']
+
+        tasacionSegui = tasacionSegui.append(data, ignore_index=True)
+
         y = y + 1
+
+    tasacionSegui = tasacionSegui.rename(index = key)
+    DataOutMatrix.loc[key] = tasacionSegui
 
     # Hides excess rows for printing:
     filasInforme = [376, 350, 334, 316, 297, 210, 199, 180, 164, 148, 110, 65, 51]
@@ -98,8 +149,11 @@ def createExcelInforme(key, codigoTasa, cliente, clienteFile, fechaInspecc, tcTa
     sheetInforme['F379'].value = f'{letras1} DÓLARES AMERICANOS'
 
     #Saves and closes the new report:
-    wbInforme.save(f'{str(date.today().strftime("%Y-%m-%d"))}_{projectName}_{clienteFile}.xlsx')
+    wbInforme.save(f'{fecha}_{projectName}_{clienteFile}.xlsx')
     wbInforme.close
+
+    sentJson(tasacionSegui, 'tasaciones')
+    sentJson(DataOutMatrix, 'matrixUpdatejson')
 
 
 if __name__ == '__main__':
@@ -109,20 +163,7 @@ if __name__ == '__main__':
     formatReportfile = 'Formatos\Informe.xlsx'
 
     pathmatrix = 'matrixjson.json'
+    pathdatageneral = 'dataGeneral.json'
+    pathdatauitasa = 'dataUITasa.json'
 
-    
-    # User input selection of real estate units
-    key = {0:1, 1:183, 2:224} 
-
-    # User input:
-    codigoTasa = '256'
-    nameC = 'Pepito Mendienta'
-    dniC = '45768939'
-    nameC2 = 'Maria Mendieta'
-    dniC2 = '35468795'
-    clienteFile = f'{nameC} - DNI {dniC}'
-    cliente = f'{nameC} - DNI: {dniC} / {nameC2} - DNI: {dniC2}'
-    fechaInspecc = '20/10/2020'
-    tcTasa = float('3.6')
-
-    createExcelInforme(key, codigoTasa, cliente, clienteFile, fechaInspecc, tcTasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix)
+    createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral)

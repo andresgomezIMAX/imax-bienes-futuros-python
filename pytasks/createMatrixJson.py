@@ -1,5 +1,57 @@
+from jsonConverter import sentJson
 import pandas as pd
 import openpyxl
+
+def calculoTasa(aComunTotal, aOcupadaTotal, aTerrenoPredio, aOcupada, aOcupadaSum, vut, factorT, unidad, moneda, vVenta, aTechada, factorRealiza, eFinan, vrc, factorAsegura, tc, claseUI, num, nivel, tipo, dni, nombre, fecha):
+
+    #Real estate land area calculus:
+    incidenciaComun = aComunTotal / aOcupadaTotal
+    aTerrenoComun = incidenciaComun * aTerrenoPredio
+    incidencia1 = aOcupada / aOcupadaTotal
+    aTerreno1 = incidencia1 * aTerrenoPredio
+    incidencia2 = aOcupada / aOcupadaSum
+    aTerreno2 = incidencia2 * aTerrenoComun
+    aTerreno = round(aTerreno1 + aTerreno2, 2)
+
+    #Real estate Comun area calculus:
+    incidencia3 = aTerreno / aTerrenoPredio
+    aComunes = round(incidencia3 * aComunTotal, 2)
+    
+    #Land value for each real estate unit:
+    vTerrenoUsd = round(aTerreno * vut / 100, 0) * 100
+
+    if moneda == 'Soles':
+        vComercialUsd = round((float(vVenta) / tc * (1 + factorT)) / 100, 0) * 100
+    else:
+        vComercialUsd = round((float(vVenta) * (1 + factorT)) / 100, 0) * 100
+
+    #Unitary comercial value /m2 for each Real Estate Unit:
+    vue = vComercialUsd / aTechada
+
+    #Edification value for each real estate unit:
+    vEdificaUsd = vComercialUsd - vTerrenoUsd
+    
+    #Excecution value for each real estate unit:
+    vRealizaUsd = round(vComercialUsd * factorRealiza / 100, 0) *100
+
+    #Insurable value for each real estate unit:
+    if eFinan == 'BANCO INTERNACIONAL DEL PERÚ S.A.A. - INTERBANK':
+        iAseguraUsd = vComercialUsd
+    else:
+        iAseguraUsd = round(float(aTechada) * vrc * (1 + factorAsegura) / 100, 0) * 100
+    
+    tipoTxt = claseUI.loc[tipo]['tipo']
+    descripTxt = claseUI.loc[tipo]['descripción']
+
+    data = {
+            'unidad': unidad, 'num': str(num), 'nivel': str(nivel), 'dni': dni, 'nombre': nombre, 'terreno': float(aTerreno),
+            'ocupada': float(aOcupada), 'techada': float(aTechada), 'comunes': float(aComunes), 'moneda': moneda, 
+            'valor': float(vVenta), 'terrenousd': float(vTerrenoUsd), 'edifusd': float(vEdificaUsd), 'comercialusd': float(vComercialUsd),
+            'realizausd': float(vRealizaUsd), 'asegurausd': float(iAseguraUsd), 'tipocambio': float(tc), 'fecha': fecha, 
+            'clase': tipo, 'vueusd': float(vue), 'tipo': tipoTxt, 'descripción': descripTxt
+            }
+        
+    return data
 
 def createMatrix(mainDataFilePath, formatFile): # Cretaes JSSON table Matriz data form users excels and makes the necesary calculus
 
@@ -27,7 +79,8 @@ def createMatrix(mainDataFilePath, formatFile): # Cretaes JSSON table Matriz dat
     factorRealiza = float(DataInGeneral.iloc[:1]['F.Realiza (%)']) #Realization value factor for calculus
     factorAsegura = float(DataInGeneral.iloc[:1]['F.Asegura (%)']) #Insurable value factor for calculus
     aComunTotal = float(DataInGeneral.iloc[:1]['A. Común (m²)']) #Projects Total Comun area
-    factorTasacion = DataInGeneral.iloc[:3][['Tipo Unidad', '% Tasación']]
+    factorTasacion = DataInGeneral.iloc[:3]['% Tasación']
+    factorTasacion = factorTasacion.rename(index=DataInGeneral.iloc[:3]['Tipo Unidad'])
     
     aOcupadaTotal = aOcupadaSum + aComunTotal #Total area including comun area
 
@@ -39,9 +92,10 @@ def createMatrix(mainDataFilePath, formatFile): # Cretaes JSSON table Matriz dat
     wbProyecto.close
 
     claseUI = DataInGeneral[['Tipo', 'Descripción']]
+    claseUI.columns = ['tipo', 'descripción']
     claseUI = claseUI.rename(index = DataInGeneral.iloc[:]['Clase']) #Gets type of real estate unit data
 
-    #Cretaes Matrix
+    #Creates Matrix
     columnas = [
                 'unidad', 'num', 'nivel', 'dni', 'nombre',
                 'terreno', 'ocupada', 'techada', 'comunes', 'moneda', 'valor', 
@@ -54,60 +108,15 @@ def createMatrix(mainDataFilePath, formatFile): # Cretaes JSSON table Matriz dat
     #Runs truew all the data and uploads it to the main DataFrame:
     for x in range(0, len(DataInMatrix), 1):
 
-        #Real estate land area calculus:
-        incidenciaComun = aComunTotal / aOcupadaTotal
-        aTerrenoComun = incidenciaComun * aTerrenoPredio
-        incidencia1 = aOcupada[x] / aOcupadaTotal
-        aTerreno1 = incidencia1 * aTerrenoPredio
-        incidencia2 = aOcupada[x] / aOcupadaSum
-        aTerreno2 = incidencia2 * aTerrenoComun
-        aTerreno = round(aTerreno1 + aTerreno2, 2)
+        factorT = factorTasacion[unidad[x]]
 
-        #Real estate Comun area calculus:
-        incidencia3 = aTerreno / aTerrenoPredio
-        aComunes = round(incidencia3 * aComunTotal, 2)
-        
-        #Land value for each real estate unit:
-        vTerrenoUsd = round(aTerreno * vut / 100, 0) * 100
-
-        #Comercial value for each real estate unit:
-        for y in factorTasacion.index:
-            if factorTasacion.loc[:y]['Tipo Unidad'][0] == unidad[x]:
-                factorT = factorTasacion.loc[:y]['% Tasación'][0]
-        
-        if moneda[x] == 'Soles':
-            vComercialUsd = round((float(vVenta[x]) / tc * (1 + factorT)) / 100, 0) * 100
-        else:
-            vComercialUsd = round((float(vVenta[x]) * (1 + factorT)) / 100, 0) * 100
-
-        #Unitary comercial value /m2 for each Real Estate Unit:
-        vue = vComercialUsd / aTechada[x]
-
-        #Edification value for each real estate unit:
-        vEdificaUsd = vComercialUsd - vTerrenoUsd
-        
-        #Excecution value for each real estate unit:
-        vRealizaUsd = round(vComercialUsd * factorRealiza / 100, 0) *100
-
-        #Insurable value for each real estate unit:
-        if eFinan == 'BANCO INTERNACIONAL DEL PERÚ S.A.A. - INTERBANK':
-            iAseguraUsd = vComercialUsd
-        else:
-            iAseguraUsd = round(float(aTechada[x]) * vrc * (1 + factorAsegura) / 100, 0) * 100
-        
-        data = {
-                'unidad': unidad[x], 'num': str(num[x]), 'nivel': str(nivel[x]), 'dni': None, 'nombre': None, 'terreno': float(aTerreno),
-                'ocupada': float(aOcupada[x]), 'techada': float(aTechada[x]), 'comunes': float(aComunes), 'moneda': moneda[x], 
-                'valor': float(vVenta[x]), 'terrenousd': float(vTerrenoUsd), 'edifusd': float(vEdificaUsd), 'comercialusd': float(vComercialUsd),
-                'realizausd': float(vRealizaUsd), 'asegurausd': float(iAseguraUsd), 'tipocambio': float(tc), 'fecha': None, 
-                'clase': tipo[x], 'vueusd': float(vue), 'tipo': claseUI.loc[tipo[x]]['Tipo'], 'descripción': claseUI.loc[tipo[x]]['Descripción']
-                }
+        data = calculoTasa(aComunTotal, aOcupadaTotal, aTerrenoPredio, aOcupada[x], aOcupadaSum, vut, factorT, unidad[x], moneda[x], vVenta[x], aTechada[x], factorRealiza, eFinan, vrc, factorAsegura, tc, claseUI, num[x], nivel[x], tipo[x], None, None, None)
         
         matrix = matrix.append(data, ignore_index=True)
         
         print(f'Tabla de matriz actualizada con {unidad[x]} {num[x]},  satisfactoriamente!')
 
-    matrix.to_json('matrixjson.json')
+    sentJson(matrix, 'matrixjson')
 
 if __name__ == '__main__':
 

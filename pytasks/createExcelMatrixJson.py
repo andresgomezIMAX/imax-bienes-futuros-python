@@ -1,3 +1,4 @@
+from jsonConverter import recibeJson
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, Color, colors, PatternFill
@@ -6,7 +7,7 @@ from datetime import date
 def createExcelMatrix(formatMatrixFile, formatFile, pathmatrix):
 
     # Converts Json to DataFrame
-    DataOutMatrix = pd.read_json(pathmatrix)
+    DataOutMatrix = recibeJson(pathmatrix)
     DataOutMatrix = DataOutMatrix.fillna('')
 
     #Organize data so it can be analyze and upload to the matrix excel form
