@@ -1,4 +1,4 @@
-from jsonConverter import sentJson
+from jsonConverter import sentJson, recibeJson
 import pandas as pd
 import openpyxl
 
@@ -116,11 +116,18 @@ def createMatrix(mainDataFilePath, formatFile): # Cretaes JSSON table Matriz dat
         
         print(f'Tabla de matriz actualizada con {unidad[x]} {num[x]},  satisfactoriamente!')
 
-    sentJson(matrix, 'matrixjson')
-
+    return matrix
+    
 if __name__ == '__main__':
 
-    mainDataFilePath = 'Formatos\DATA.xlsx' # Excel with matrix data
-    formatFile = 'Formatos\PMF-Tasacion.xlsx' # Excel with project data
+    projects = recibeJson('Formatos\Template.json')
+    projectSelected = 0
 
-    createMatrix(mainDataFilePath, formatFile)
+    mainDataFilePath = projects['PathData'][projectSelected] # Excel with matrix data
+    formatFile = projects['PathInforme'][projectSelected] # Excel with project data
+
+    matrix = createMatrix(mainDataFilePath, formatFile)
+
+    name = 'matrixjson.json'
+
+    sentJson(matrix, name)

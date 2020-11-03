@@ -5,7 +5,7 @@ import pandas as pd
 import openpyxl
 from datetime import date
 
-def createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral):
+def createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral, pathExcel):
 
     fecha = str(date.today().strftime("%Y-%m-%d"))
 
@@ -149,21 +149,31 @@ def createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatRepor
     sheetInforme['F379'].value = f'{letras1} DÓLARES AMERICANOS'
 
     #Saves and closes the new report:
-    wbInforme.save(f'{fecha}_{projectName}_{clienteFile}.xlsx')
+    wbInforme.save(f'{pathExcel}{fecha}_{projectName}_{clienteFile}.xlsx')
     wbInforme.close
 
-    sentJson(tasacionSegui, 'tasaciones')
-    sentJson(DataOutMatrix, 'matrixUpdatejson')
-
+    return tasacionSegui, DataOutMatrix
 
 if __name__ == '__main__':
 
-    formatFile = 'Formatos\PMF-Tasacion.xlsx'
-    mainDataFilePath = 'Formatos\DATA.xlsx'
-    formatReportfile = 'Formatos\Informe.xlsx'
+    projects = recibeJson('Formatos\Template.json')
+    projectSelected = 0
+
+    mainDataFilePath = projects['PathData'][projectSelected] # Excel with matrix data
+    formatFile = projects['PathInforme'][projectSelected] # Excel with project data
+
+    formatReportfile = 'Formatos\Informe.xlsx' #Ubicación de formato para informe
 
     pathmatrix = 'matrixjson.json'
     pathdatageneral = 'dataGeneral.json'
     pathdatauitasa = 'dataUITasa.json'
 
-    createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral)
+    pathExcel = ''
+
+    tasacionSegui, DataOutMatrix = createExcelInforme(pathdatauitasa, formatFile, mainDataFilePath, formatReportfile, pathmatrix, pathdatageneral, pathExcel)
+
+    nameT = 'tasaciones.json'
+    nameM = 'matrixUpdatejson.json'
+
+    sentJson(tasacionSegui, nameT)
+    sentJson(DataOutMatrix, nameM)

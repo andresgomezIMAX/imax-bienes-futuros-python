@@ -5,70 +5,90 @@
             "nombreProyecto": "Villa Marina",
             "direccion": "Santa Anita",
             "promotor": "XXXX",
-            "banco": "BCP"
+            "banco": "BCP",
+            "PathData": "Formatos\\DATA.xlsx",
+            "PathInforme": "Formatos\\PMF-Tasacion.xlsx"
         },
         {
             "idProyecto": 2,
             "nombreProyecto": "Villa Marina 2",
             "direccion": "Santa Anita 2",
             "promotor": "XXXXX",
-            "banco": "BBVA"
+            "banco": "BBVA",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 3,
             "nombreProyecto": "Primavera",
             "direccion": "San Miguel",
             "promotor": "XXXXX",
-            "banco": "BBVA"
+            "banco": "BBVA",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 4,
             "nombreProyecto": "Primavera",
             "direccion": "Miraflores",
             "promotor": "XXXXX",
-            "banco": "BCP"
+            "banco": "BCP",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 9,
             "nombreProyecto": "Villa Marina",
             "direccion": "Santa Anita ",
             "promotor": "XXXXXXX",
-            "banco": "BCP"
+            "banco": "BCP",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 12,
             "nombreProyecto": "12345",
             "direccion": "23e4rt",
             "promotor": "sxdcfvg",
-            "banco": "bcp"
+            "banco": "bcp",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 24,
             "nombreProyecto": "Las Palmeras",
             "direccion": "Santiago de Surco",
             "promotor": "xxxxxxxxxxxxx",
-            "banco": "bbva"
+            "banco": "bbva",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 55,
             "nombreProyecto": "Las Palmeras",
             "direccion": "hola",
             "promotor": "sdfb",
-            "banco": "bcp"
+            "banco": "bcp",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 755,
             "nombreProyecto": "Las Palmeras",
             "direccion": "wertyu",
             "promotor": "wertyu",
-            "banco": "bcp"
+            "banco": "bcp",
+            "PathData": "",
+            "PathInforme": ""
         },
         {
             "idProyecto": 2345,
             "nombreProyecto": "3456yu",
             "direccion": "",
             "promotor": "",
-            "banco": "bcp"
+            "banco": "bcp",
+            "PathData": "",
+            "PathInforme": ""
         }
     ],
     "Message": "",

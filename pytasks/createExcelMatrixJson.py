@@ -4,7 +4,7 @@ import openpyxl
 from openpyxl.styles import Font, Color, colors, PatternFill
 from datetime import date
 
-def createExcelMatrix(formatMatrixFile, formatFile, pathmatrix):
+def createExcelMatrix(formatMatrixFile, formatFile, pathmatrix, pathExcel):
 
     # Converts Json to DataFrame
     DataOutMatrix = recibeJson(pathmatrix)
@@ -83,16 +83,22 @@ def createExcelMatrix(formatMatrixFile, formatFile, pathmatrix):
     sheetProyecto = wbProyecto['Memoria']
     sheetMatrix['D6'].value = sheetProyecto['D31'].value
 
-    wbMatrix.save(f'{str(date.today().strftime("%Y-%m-%d"))}_Matriz_{projectName}.xlsx') # Saves matrix excel
+    wbMatrix.save(f'{pathExcel}{str(date.today().strftime("%Y-%m-%d"))}_Matriz_{projectName}.xlsx') # Saves matrix excel
 
     wbProyecto.close
     wbMatrix.close
 
 if __name__ == '__main__':
+
+    projects = recibeJson('Formatos\Template.json')
+    projectSelected = 0
+
+    formatFile = projects['PathInforme'][projectSelected] # Excel with project data
     
     formatMatrixFile = 'Formatos\MATRIZ TASACIONES.xlsx' # Excel with Matrix Form
-    formatFile = 'Formatos\PMF-Tasacion.xlsx' # Excel with project data
     
     pathmatrix = 'matrixjson.json'
 
-    createExcelMatrix(formatMatrixFile, formatFile, pathmatrix)
+    pathExcel = ''
+
+    createExcelMatrix(formatMatrixFile, formatFile, pathmatrix, pathExcel)

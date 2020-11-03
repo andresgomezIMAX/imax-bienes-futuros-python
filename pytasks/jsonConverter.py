@@ -18,13 +18,13 @@ def sentJson(dfFile, name): #Recives dataFrame and converts for json read
     json = json.drop(index=[1,2,3,4,5,6,7,8,9])
     json['DataProjects'][0] = data
 
-    json.to_json(f'{name}.json', orient='records')
-    json = open(f'{name}.json', 'r')
+    json.to_json(name, orient='records')
+    json = open(name, 'r')
     json.close
     jsontxt = json.read()
     jsontxt = jsontxt[1:len(jsontxt)-1]
 
-    json2 = open(f'{name}.json', 'w')
+    json2 = open(name, 'w')
     json2.write(jsontxt)
     json2.close
 
